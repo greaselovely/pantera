@@ -16,6 +16,18 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 if not os.path.exists(EXPORT_DIR):
     os.makedirs(EXPORT_DIR)
 
+# Function to send notifications
+def send_notification(message, ntfy_topic):
+    ntfy_topic = "https://ntfy.sh/" + ntfy_topic
+    try:
+        response = requests.post(ntfy_topic, data=message.encode('utf-8'), headers={'Title': 'Device Backup Notification'})
+        if response.status_code == 200:
+            print("Notification sent successfully.")
+        else:
+            print(f"Failed to send notification: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending notification: {e}")
+
 # Function to authenticate firewalls and retrieve API keys
 def authenticate_firewalls(ip):
     print(f"Authenticating to firewall at {ip}...")
@@ -25,12 +37,8 @@ def authenticate_firewalls(ip):
 
 # Function to retrieve the API key from the firewall
 def retrieve_api_key(ip, username, password):
-    # Actual logic to retrieve the API key from the firewall
     api_url = f"https://{ip}/api/?type=keygen"
-    payload = {
-        'user': username,
-        'password': password
-    }
+    payload = {'user': username, 'password': password}
     try:
         response = requests.post(api_url, data=payload, verify=False)
         response.raise_for_status()
@@ -48,7 +56,7 @@ def retrieve_api_key(ip, username, password):
         return None
 
 # Function to export the device state
-def export_device_state(ip, api_key):
+def export_device_state(ip, api_key, ntfy_topic):
     url = f"https://{ip}/api/?type=export&category=device-state&key={api_key}"
     try:
         response = requests.get(url, verify=False)
@@ -70,9 +78,10 @@ def export_device_state(ip, api_key):
                         new_filename = f"{EXPORT_DIR}/{hostname}_{datetime.now().strftime('%m%d%Y')}.tgz"
                         os.rename(tgz_filename, new_filename)
                         print(f"Exported device state renamed to {new_filename}.")
-
+                        send_notification(f"Backup successful for firewall {ip}. File: {new_filename}", ntfy_topic)
     except requests.exceptions.RequestException as e:
         print(f"Failed to export device state for {ip}: {e}")
+        send_notification(f"Backup failed for firewall {ip}. Error: {e}", ntfy_topic)
 
 # Main function to load the configuration and proceed
 def main():
@@ -81,10 +90,14 @@ def main():
         print("No devices found in the existing configuration.")
         create_config()
     else:
-        # Export device state for each device in the configuration
-        for ip, details in config['devices'].items():
-            print(f"Exporting device state for firewall {ip}...")
-            export_device_state(ip, details['api_key'])
+        ntfy_topic = config.get('alerts', {}).get('ntfy', {}).get('subscription_topic', '')
+        if not ntfy_topic:
+            print("Notification URL is not configured. Skipping notifications.")
+        else:
+            # Export device state for each device in the configuration
+            for ip, details in config['devices'].items():
+                print(f"Exporting device state for firewall {ip}...")
+                export_device_state(ip, details['api_key'], ntfy_topic)
 
 if __name__ == '__main__':
     main()

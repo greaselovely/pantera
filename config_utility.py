@@ -8,33 +8,46 @@ import xmltodict
 CONFIG_VERSION = '1.0'
 CONFIG_FILE = 'config.json'
 
-# Suppress InsecureRequestWarning for unverified HTTPS requests
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Function to load the configuration file
 def load_config(version):
     if not os.path.exists(CONFIG_FILE):
         create_config()
     with open(CONFIG_FILE, 'r') as f:
         config = json.load(f)
-        if 'version' not in config or config['version'] != version:
-            print(f"Updating configuration file to version {version}.")
-            config['version'] = version
-            if 'devices' not in config:
-                config['devices'] = {}
-            save_config(config)
-        return config
+        
+    if 'version' not in config or config['version'] != version:
+        print(f"Updating configuration file to version {version}.")
+        config['version'] = version
+    
+    if 'devices' not in config:
+        config['devices'] = {}
+    
+    if 'alerts' not in config:
+        config['alerts'] = {}
+    
+    if 'ntfy' not in config['alerts']:
+        config['alerts']['ntfy'] = {}
+    
+    if 'subscription_topic' not in config['alerts']['ntfy']:
+        config['alerts']['ntfy']['subscription_topic'] = ""
+    
+    save_config(config)
+    return config
 
-# Function to save the configuration file
 def save_config(config):
     with open(CONFIG_FILE, 'w') as f:
         json.dump(config, f, indent=4)
 
-# Function to create the configuration file
 def create_config():
     config = {
         'version': CONFIG_VERSION,
-        'devices': {}
+        'devices': {},
+        'alerts': {
+            'ntfy': {
+                'subscription_topic': ""
+            }
+        }
     }
     print("Creating configuration file...")
     same_api_key = input("Will all firewalls use the same API key? (yes/no) [yes]: ").strip().lower() or 'yes'
@@ -72,9 +85,7 @@ def create_config():
     else:
         print("No valid firewalls were added to the configuration.")
 
-# Function to retrieve the API key from the firewall
 def retrieve_api_key(ip, username, password):
-    # Actual logic to retrieve the API key from the firewall
     api_url = f"https://{ip}/api/?type=keygen"
     payload = {
         'user': username,
