@@ -15,7 +15,7 @@ Pantera is a Python utility for exporting the device state of Palo Alto Networks
 
 Install dependencies using pip:
 ```sh
-pip install requests xmltodict
+pip install -r requirements.txt
 ```
 
 ## Project Structure
