@@ -98,7 +98,7 @@ def manage_export_directory(ntfy_topic):
             print(f"Error deleting file {oldest_file}: {e}")
 
     if deleted_files_count > 0:
-        message = f"Cleanup completed: {deleted_files_count} old backup file(s) deleted from {EXPORT_DIR}."
+        message = f"Cleanup completed: {deleted_files_count} backup file(s) deleted."
         send_notification(message, ntfy_topic)
 
 
