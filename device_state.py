@@ -115,7 +115,7 @@ def main():
             for ip, details in config['devices'].items():
                 print(f"Exporting device state for firewall {ip}...")
                 export_device_state(ip, details['api_key'], ntfy_topic)
-                manage_export_directory()
+                manage_export_directory(ntfy_topic)
 
 if __name__ == '__main__':
     main()
