@@ -12,11 +12,8 @@ EXPORT_DIR = 'device_exports'
 # Suppress InsecureRequestWarning for unverified HTTPS requests
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Ensure the export directory exists
-if not os.path.exists(EXPORT_DIR):
-    os.makedirs(EXPORT_DIR)
+os.makedirs(EXPORT_DIR, exist_ok=True)
 
-# Function to send notifications
 def send_notification(message, ntfy_topic):
     ntfy_topic = "https://ntfy.sh/" + ntfy_topic
     try:
@@ -28,14 +25,12 @@ def send_notification(message, ntfy_topic):
     except requests.exceptions.RequestException as e:
         print(f"Error sending notification: {e}")
 
-# Function to authenticate firewalls and retrieve API keys
 def authenticate_firewalls(ip):
     print(f"Authenticating to firewall at {ip}...")
     username = input(f"Enter the username for firewall {ip}: ")
     password = getpass.getpass(f"Enter the password for firewall {ip}: ")
     return retrieve_api_key(ip, username, password)
 
-# Function to retrieve the API key from the firewall
 def retrieve_api_key(ip, username, password):
     api_url = f"https://{ip}/api/?type=keygen"
     payload = {'user': username, 'password': password}
@@ -55,7 +50,6 @@ def retrieve_api_key(ip, username, password):
         print(f"Failed to parse XML response from firewall {ip}: {response.text}")
         return None
 
-# Function to export the device state
 def export_device_state(ip, api_key, ntfy_topic):
     url = f"https://{ip}/api/?type=export&category=device-state&key={api_key}"
     try:
