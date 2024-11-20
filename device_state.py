@@ -78,7 +78,7 @@ def export_device_state(ip, api_key, ntfy_topic):
                         new_filename = f"{EXPORT_DIR}/{hostname}_{datetime.now().strftime('%m%d%Y')}.tgz"
                         os.rename(tgz_filename, new_filename)
                         print(f"Exported device state renamed to {new_filename}.")
-                        send_notification(f"Backup successful for firewall {ip}. File: {new_filename}", ntfy_topic)
+                        send_notification(f"Backup successful for {hostname}. File: {new_filename}", ntfy_topic)
     except requests.exceptions.RequestException as e:
         print(f"Failed to export device state for {ip}: {e}")
         send_notification(f"Backup failed for firewall {ip}. Error: {e}", ntfy_topic)
