@@ -14,17 +14,6 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 os.makedirs(EXPORT_DIR, exist_ok=True)
 
-def send_notification(message, ntfy_topic):
-    ntfy_topic = "https://ntfy.sh/" + ntfy_topic
-    try:
-        response = requests.post(ntfy_topic, data=message.encode('utf-8'), headers={'Title': 'Device Backup Notification'})
-        if response.status_code == 200:
-            print("Notification sent successfully.")
-        else:
-            print(f"Failed to send notification: {response.status_code}")
-    except requests.exceptions.RequestException as e:
-        print(f"Error sending notification: {e}")
-
 def authenticate_firewalls(ip):
     print(f"Authenticating to firewall at {ip}...")
     username = input(f"Enter the username for firewall {ip}: ")
@@ -96,6 +85,22 @@ def manage_export_directory(ntfy_topic):
         send_notification(message, ntfy_topic)
 
 
+def send_notification(message, ntfy_topic):
+    if not ntfy_topic:
+        print("[Warning] Notification skipped: No ntfy subscription topic configured.")
+        return
+    
+    ntfy_topic = "https://ntfy.sh/" + ntfy_topic
+    try:
+        response = requests.post(ntfy_topic, data=message.encode('utf-8'), headers={'Title': 'Device Backup Notification'})
+        if response.status_code == 200:
+            print("Notification sent successfully.")
+        else:
+            print(f"Failed to send notification: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending notification: {e}")
+
+
 def main():
     config = load_config(CONFIG_VERSION)
     if not config.get('devices'):
@@ -103,13 +108,11 @@ def main():
         create_config()
     else:
         ntfy_topic = config.get('alerts', {}).get('ntfy', {}).get('subscription_topic', '')
-        if not ntfy_topic:
-            print("Notification URL is not configured. Skipping notifications.")
-        else:
-            for ip, details in config['devices'].items():
-                print(f"Exporting device state for firewall {ip}...")
-                export_device_state(ip, details['api_key'], ntfy_topic)
-                manage_export_directory(ntfy_topic)
+        for ip, details in config['devices'].items():
+            print(f"Exporting device state for firewall {ip}...")
+            export_device_state(ip, details['api_key'], ntfy_topic)
+            manage_export_directory(ntfy_topic)
+
 
 if __name__ == '__main__':
     main()
